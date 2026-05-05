@@ -3425,11 +3425,13 @@ do
 			Data = Data or {}
 
 			if not Library.Font then
-				CustomFont:New("VerdanaFix", 400, "Regular", {
-					Id = "VerdanaFix",
-					Url = "https://github.com/sametexe001/luas/raw/refs/heads/main/fonts/verdana.ttf",
-				})
-				Library.Font = CustomFont:Get("VerdanaFix")
+				task.spawn(function()
+					CustomFont:New("VerdanaFix", 400, "Regular", {
+						Id = "VerdanaFix",
+						Url = "https://github.com/sametexe001/luas/raw/refs/heads/main/fonts/verdana.ttf",
+					})
+					Library.Font = CustomFont:Get("VerdanaFix")
+				end)
 			end
 
 			local Window = {
