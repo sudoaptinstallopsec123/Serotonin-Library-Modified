@@ -3424,15 +3424,9 @@ do
 		Library.Window = function(self, Data)
 			Data = Data or {}
 
-			if not Library.Font then
-				task.spawn(function()
-					CustomFont:New("VerdanaFix", 400, "Regular", {
-						Id = "VerdanaFix",
-						Url = "https://github.com/sametexe001/luas/raw/refs/heads/main/fonts/verdana.ttf",
-					})
-					Library.Font = CustomFont:Get("VerdanaFix")
-				end)
-			end
+if not Library.Font then
+    Library.Font = Font.new("rbxasset://fonts/families/GothamSSm.json", Enum.FontWeight.Regular, Enum.FontStyle.Normal)
+end
 
 			local Window = {
 				Name = Data.Name or Data.name or "Bronx Dupe",
@@ -5934,4 +5928,3 @@ end
 
 getgenv().Library = Library
 return Library 
-
