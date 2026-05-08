@@ -5670,24 +5670,14 @@ end
 					end
 					writefile(SilentLoadTypePath, TableConcat(selected, ","))
 				end
-				local function TrackChild(section, callback)
-					local content = section and section.Items and section.Items["Content"] and section.Items["Content"].Instance
-					if not content then
-						return callback(), nil
+				local function SetSilentTypeVisible(dropdown, visible)
+					if dropdown and dropdown.Items and dropdown.Items["Dropdown"] and dropdown.Items["Dropdown"].Instance then
+						dropdown.Items["Dropdown"].Instance.Visible = visible
 					end
-					local old = {}
-					for _, c in pairs(content:GetChildren()) do
-						old[c] = true
-					end
-					local result = callback()
-					local frame = nil
-					for _, c in pairs(content:GetChildren()) do
-						if not old[c] then
-							frame = c
-							break
-						end
-					end
-					return result, frame
+				end
+				local silentTypeDropdown
+				if (SilentLoadPath and isfile(SilentLoadPath)) and SilentLoadTypePath and not isfile(SilentLoadTypePath) then
+					writefile(SilentLoadTypePath, "UI")
 				end
 
 				SettingsSection:Button({
@@ -5735,33 +5725,26 @@ end
 								end
 							end
 						end
+						SetSilentTypeVisible(silentTypeDropdown, Value == true)
 					end
 				})
-				local silentTypeFrame
-				local _, stf = TrackChild(SettingsSection, function()
-					return SettingsSection:Dropdown({
-						Name = "Silent Load Type",
-						Flag = "SilentLoadType",
-						Default = ReadSilentLoadTypes(),
-						Items = { "UI", "Watermark" },
-						Multi = true,
-						Callback = function(Value)
-							WriteSilentLoadTypes(Value)
-						end
-					})
-				end)
-				silentTypeFrame = stf
-				if silentTypeFrame then
-					silentTypeFrame.Visible = (Library.Flags["SilentLoad"] == true)
-				end
+				silentTypeDropdown = SettingsSection:Dropdown({
+					Name = "Silent Load Type",
+					Flag = "SilentLoadType",
+					Default = ReadSilentLoadTypes(),
+					Items = { "UI", "Watermark" },
+					Multi = true,
+					Callback = function(Value)
+						WriteSilentLoadTypes(Value)
+					end
+				})
+				SetSilentTypeVisible(silentTypeDropdown, Library.Flags["SilentLoad"] == true)
 				local oldSilentLoadSetter = Library.SetFlags["SilentLoad"]
 				Library.SetFlags["SilentLoad"] = function(Value)
 					if oldSilentLoadSetter then
 						oldSilentLoadSetter(Value)
 					end
-					if silentTypeFrame then
-						silentTypeFrame.Visible = (Value == true)
-					end
+					SetSilentTypeVisible(silentTypeDropdown, Value == true)
 				end
 				
 				SettingsSection:Toggle({
