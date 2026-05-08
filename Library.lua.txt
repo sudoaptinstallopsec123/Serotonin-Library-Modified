@@ -66,6 +66,45 @@ do
 
 	local RectNew = Rect.new
 
+	local function ReadSilentLoadState(path)
+		local state = { UI = false, Watermark = false }
+		if not path or not isfile(path) then
+			return state
+		end
+		local raw = StringLower(readfile(path) or "")
+		if raw == "" or raw == "true" then
+			state.UI = true
+			return state
+		end
+		if StringFind(raw, "ui", 1, true) then
+			state.UI = true
+		end
+		if StringFind(raw, "watermark", 1, true) then
+			state.Watermark = true
+		end
+		return state
+	end
+
+	local function WriteSilentLoadState(path, uiEnabled, watermarkEnabled)
+		if not path then
+			return
+		end
+		local selected = {}
+		if uiEnabled then
+			TableInsert(selected, "UI")
+		end
+		if watermarkEnabled then
+			TableInsert(selected, "Watermark")
+		end
+		if #selected == 0 then
+			if isfile(path) then
+				delfile(path)
+			end
+			return
+		end
+		writefile(path, TableConcat(selected, ","))
+	end
+
 	local IsMobile = UserInputService.TouchEnabled or false
 
 	Library = {
@@ -2572,6 +2611,7 @@ do
 					BorderSizePixel = 2,
 					BackgroundColor3 = FromRGB(17, 21, 27),
 					ZIndex = 5,
+					Visible = not (Library._BootHideWatermark == true),
 				})
 				Items["Watermark"]:AddToTheme({ BackgroundColor3 = "Background 1" })
 
@@ -3671,10 +3711,10 @@ end
 			
 			local bootHidden, bootHideWatermark = false, false
 			if Library.Folders and Library.Folders.Directory then
-				local slUiPath = Library.Folders.Directory .. "/silentload.txt"
-				local slWmPath = Library.Folders.Directory .. "/silentload_watermark.txt"
-				bootHidden = isfile(slUiPath)
-				bootHideWatermark = isfile(slWmPath)
+				local slPath = Library.Folders.Directory .. "/silentload.txt"
+				local state = ReadSilentLoadState(slPath)
+				bootHidden = state.UI == true
+				bootHideWatermark = state.Watermark == true
 			end
 			if bootHidden then
 				Library.FadeSpeed = 0
@@ -3684,6 +3724,7 @@ end
 				Window:SetOpen(true)
 			end
 			Window._BootHideWatermark = bootHideWatermark
+			Library._BootHideWatermark = bootHideWatermark
 			
 			if Data.MobileButtonText then
 				Library.HideShowButtonText = Data.MobileButtonText
@@ -5628,8 +5669,8 @@ end
 			local SettingsPage = Window:Page({ Name = "Settings", Columns = 2 })
 			local SettingsSection = SettingsPage:Section({ Name = "Settings", Side = 1 })
 			do
-				local SilentLoadUIPath = (Library.Folders and Library.Folders.Directory and (Library.Folders.Directory .. "/silentload.txt")) or nil
-				local SilentLoadWatermarkPath = (Library.Folders and Library.Folders.Directory and (Library.Folders.Directory .. "/silentload_watermark.txt")) or nil
+				local SilentLoadPath = (Library.Folders and Library.Folders.Directory and (Library.Folders.Directory .. "/silentload.txt")) or nil
+				local SilentState = ReadSilentLoadState(SilentLoadPath)
 
 				SettingsSection:Button({
 					Name = "Unload",
@@ -5662,34 +5703,26 @@ end
 				SettingsSection:Toggle({
 					Name = "Silent Load UI",
 					Flag = "SilentLoadUI",
-					Default = (SilentLoadUIPath and isfile(SilentLoadUIPath)) or false,
+					Default = SilentState.UI == true,
 					Callback = function(Value)
-						if SilentLoadUIPath then
-							if Value then
-								writefile(SilentLoadUIPath, "true")
-							else
-								if isfile(SilentLoadUIPath) then
-									delfile(SilentLoadUIPath)
-								end
-							end
-						end
+						WriteSilentLoadState(
+							SilentLoadPath,
+							Value == true,
+							Library.Flags and Library.Flags["SilentLoadWatermark"] == true
+						)
 					end
 				})
 
 				SettingsSection:Toggle({
 					Name = "Silent Load Watermark",
 					Flag = "SilentLoadWatermark",
-					Default = (SilentLoadWatermarkPath and isfile(SilentLoadWatermarkPath)) or false,
+					Default = SilentState.Watermark == true,
 					Callback = function(Value)
-						if SilentLoadWatermarkPath then
-							if Value then
-								writefile(SilentLoadWatermarkPath, "true")
-							else
-								if isfile(SilentLoadWatermarkPath) then
-									delfile(SilentLoadWatermarkPath)
-								end
-							end
-						end
+						WriteSilentLoadState(
+							SilentLoadPath,
+							Library.Flags and Library.Flags["SilentLoadUI"] == true,
+							Value == true
+						)
 					end
 				})
 				
@@ -5903,8 +5936,9 @@ end
 					task.spawn(function()
 						task.wait(1)
 						if isfile(Library.Folders.Configs .. "/" .. TargetCfg .. ".json") then
-							local silentUi = isfile(Library.Folders.Directory .. "/silentload.txt")
-							local silentWatermark = isfile(Library.Folders.Directory .. "/silentload_watermark.txt")
+							local silentState = ReadSilentLoadState(Library.Folders.Directory .. "/silentload.txt")
+							local silentUi = silentState.UI == true
+							local silentWatermark = silentState.Watermark == true
 							if silentWatermark and Library.SetFlags and Library.SetFlags["Watermark"] then
 								Library.SetFlags["Watermark"](false)
 							end
