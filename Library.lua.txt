@@ -3671,14 +3671,10 @@ end
 			
 			local bootHidden, bootHideWatermark = false, false
 			if Library.Folders and Library.Folders.Directory then
-				local slPath = Library.Folders.Directory .. "/silentload.txt"
-				local slTypePath = Library.Folders.Directory .. "/silentload_type.txt"
-				bootHidden = isfile(slPath)
-				if bootHidden then
-					local raw = isfile(slTypePath) and StringLower(readfile(slTypePath) or "") or "ui"
-					bootHidden = StringFind(raw, "ui", 1, true) ~= nil
-					bootHideWatermark = StringFind(raw, "watermark", 1, true) ~= nil
-				end
+				local slUiPath = Library.Folders.Directory .. "/silentload.txt"
+				local slWmPath = Library.Folders.Directory .. "/silentload_watermark.txt"
+				bootHidden = isfile(slUiPath)
+				bootHideWatermark = isfile(slWmPath)
 			end
 			if bootHidden then
 				Library.FadeSpeed = 0
@@ -5632,53 +5628,8 @@ end
 			local SettingsPage = Window:Page({ Name = "Settings", Columns = 2 })
 			local SettingsSection = SettingsPage:Section({ Name = "Settings", Side = 1 })
 			do
-				local SilentLoadPath = (Library.Folders and Library.Folders.Directory and (Library.Folders.Directory .. "/silentload.txt")) or nil
-				local SilentLoadTypePath = (Library.Folders and Library.Folders.Directory and (Library.Folders.Directory .. "/silentload_type.txt")) or nil
-				local function ReadSilentLoadTypes()
-					local types = { "UI" }
-					if SilentLoadTypePath and isfile(SilentLoadTypePath) then
-						local raw = StringLower(readfile(SilentLoadTypePath) or "")
-						local parsed = {}
-						if StringFind(raw, "ui", 1, true) then
-							TableInsert(parsed, "UI")
-						end
-						if StringFind(raw, "watermark", 1, true) then
-							TableInsert(parsed, "Watermark")
-						end
-						if #parsed > 0 then
-							types = parsed
-						end
-					end
-					return types
-				end
-				local function WriteSilentLoadTypes(value)
-					if not SilentLoadTypePath then return end
-					local selected = {}
-					if type(value) == "table" then
-						if value.UI == true then TableInsert(selected, "UI") end
-						if value.Watermark == true then TableInsert(selected, "Watermark") end
-						for _, v in pairs(value) do
-							if v == "UI" and not TableFind(selected, "UI") then TableInsert(selected, "UI") end
-							if v == "Watermark" and not TableFind(selected, "Watermark") then TableInsert(selected, "Watermark") end
-						end
-					elseif type(value) == "string" then
-						if value == "UI" then TableInsert(selected, "UI") end
-						if value == "Watermark" then TableInsert(selected, "Watermark") end
-					end
-					if #selected == 0 then
-						TableInsert(selected, "UI")
-					end
-					writefile(SilentLoadTypePath, TableConcat(selected, ","))
-				end
-				local function SetSilentTypeVisible(dropdown, visible)
-					if dropdown and dropdown.Items and dropdown.Items["Dropdown"] and dropdown.Items["Dropdown"].Instance then
-						dropdown.Items["Dropdown"].Instance.Visible = visible
-					end
-				end
-				local silentTypeDropdown
-				if (SilentLoadPath and isfile(SilentLoadPath)) and SilentLoadTypePath and not isfile(SilentLoadTypePath) then
-					writefile(SilentLoadTypePath, "UI")
-				end
+				local SilentLoadUIPath = (Library.Folders and Library.Folders.Directory and (Library.Folders.Directory .. "/silentload.txt")) or nil
+				local SilentLoadWatermarkPath = (Library.Folders and Library.Folders.Directory and (Library.Folders.Directory .. "/silentload_watermark.txt")) or nil
 
 				SettingsSection:Button({
 					Name = "Unload",
@@ -5709,43 +5660,38 @@ end
 				})
 
 				SettingsSection:Toggle({
-					Name = "Silent Load",
-					Flag = "SilentLoad",
-					Default = (SilentLoadPath and isfile(SilentLoadPath)) or false,
+					Name = "Silent Load UI",
+					Flag = "SilentLoadUI",
+					Default = (SilentLoadUIPath and isfile(SilentLoadUIPath)) or false,
 					Callback = function(Value)
-						if SilentLoadPath then
+						if SilentLoadUIPath then
 							if Value then
-								writefile(SilentLoadPath, "true")
-								if SilentLoadTypePath and not isfile(SilentLoadTypePath) then
-									writefile(SilentLoadTypePath, "UI")
-								end
+								writefile(SilentLoadUIPath, "true")
 							else
-								if isfile(SilentLoadPath) then
-									delfile(SilentLoadPath)
+								if isfile(SilentLoadUIPath) then
+									delfile(SilentLoadUIPath)
 								end
 							end
 						end
-						SetSilentTypeVisible(silentTypeDropdown, Value == true)
 					end
 				})
-				silentTypeDropdown = SettingsSection:Dropdown({
-					Name = "Silent Load Type",
-					Flag = "SilentLoadType",
-					Default = ReadSilentLoadTypes(),
-					Items = { "UI", "Watermark" },
-					Multi = true,
+
+				SettingsSection:Toggle({
+					Name = "Silent Load Watermark",
+					Flag = "SilentLoadWatermark",
+					Default = (SilentLoadWatermarkPath and isfile(SilentLoadWatermarkPath)) or false,
 					Callback = function(Value)
-						WriteSilentLoadTypes(Value)
+						if SilentLoadWatermarkPath then
+							if Value then
+								writefile(SilentLoadWatermarkPath, "true")
+							else
+								if isfile(SilentLoadWatermarkPath) then
+									delfile(SilentLoadWatermarkPath)
+								end
+							end
+						end
 					end
 				})
-				SetSilentTypeVisible(silentTypeDropdown, Library.Flags["SilentLoad"] == true)
-				local oldSilentLoadSetter = Library.SetFlags["SilentLoad"]
-				Library.SetFlags["SilentLoad"] = function(Value)
-					if oldSilentLoadSetter then
-						oldSilentLoadSetter(Value)
-					end
-					SetSilentTypeVisible(silentTypeDropdown, Value == true)
-				end
 				
 				SettingsSection:Toggle({
 					Name = "Mobile Hide/Show Button",
@@ -5957,15 +5903,13 @@ end
 					task.spawn(function()
 						task.wait(1)
 						if isfile(Library.Folders.Configs .. "/" .. TargetCfg .. ".json") then
-							local silentEnabled = isfile(Library.Folders.Directory .. "/silentload.txt")
-							local silentRaw = isfile(Library.Folders.Directory .. "/silentload_type.txt") and StringLower(readfile(Library.Folders.Directory .. "/silentload_type.txt") or "") or "ui"
-							local silentUi = StringFind(silentRaw, "ui", 1, true) ~= nil
-							local silentWatermark = StringFind(silentRaw, "watermark", 1, true) ~= nil
-							if silentEnabled and silentWatermark and Library.SetFlags and Library.SetFlags["Watermark"] then
+							local silentUi = isfile(Library.Folders.Directory .. "/silentload.txt")
+							local silentWatermark = isfile(Library.Folders.Directory .. "/silentload_watermark.txt")
+							if silentWatermark and Library.SetFlags and Library.SetFlags["Watermark"] then
 								Library.SetFlags["Watermark"](false)
 							end
 							Library:LoadConfig(readfile(Library.Folders.Configs .. "/" .. TargetCfg .. ".json"))
-							if not (silentEnabled and silentUi) then
+							if not silentUi then
 								Library:Notification("Auto-loaded config: " .. TargetCfg, 5)
 							end
 						end
