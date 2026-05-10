@@ -2621,8 +2621,8 @@ do
 				Items["Watermark"] = Instances:Create("Frame", {
 					Parent = Library.Holder.Instance,
 					Name = "\0",
-					AnchorPoint = Vector2New(0.5, 0),
-					Position = UDim2New(0.5, 0, 0, 25),
+					AnchorPoint = Vector2New(0, 0),
+					Position = UDim2New(0, 25, 0, 25),
 					BorderColor3 = FromRGB(0, 34, 37),
 					Size = UDim2New(0, 180, 0, 30),
 					BorderSizePixel = 2,
@@ -2733,7 +2733,22 @@ do
 				Items["Watermark"].Instance.Visible = Bool
 			end
 
+			function Watermark:SetPosition(PositionName)
+				local pos = tostring(PositionName or "Left")
+				if pos == "Center" then
+					Items["Watermark"].Instance.AnchorPoint = Vector2New(0.5, 0)
+					Items["Watermark"].Instance.Position = UDim2New(0.5, 0, 0, 25)
+				elseif pos == "Right" then
+					Items["Watermark"].Instance.AnchorPoint = Vector2New(1, 0)
+					Items["Watermark"].Instance.Position = UDim2New(1, -25, 0, 25)
+				else
+					Items["Watermark"].Instance.AnchorPoint = Vector2New(0, 0)
+					Items["Watermark"].Instance.Position = UDim2New(0, 25, 0, 25)
+				end
+			end
+
 			Watermark:SetText(Name)
+			Watermark:SetPosition("Left")
 
 			return Watermark
 		end
@@ -4996,6 +5011,14 @@ end
 				end)
 			end
 
+			function Dropdown:SetVisibility(Bool)
+				local visible = (Bool == true)
+				Items["Dropdown"].Instance.Visible = visible
+				if not visible and Dropdown.IsOpen then
+					Dropdown:SetOpen(false)
+				end
+			end
+
 			function Dropdown:Add(Option)
 				local OptionButton = Instances:Create("TextButton", {
 					Parent = Items["Holder"].Instance,
@@ -5698,16 +5721,38 @@ end
 					end,
 				})
 
+				local WatermarkPositionDropdown
 				SettingsSection:Toggle({
 					Name = "Watermark",
 					Flag = "Watermark",
 					Default = true,
 					Callback = function(Value)
 						Watermark:SetVisibility(Value)
+						if WatermarkPositionDropdown and WatermarkPositionDropdown.SetVisibility then
+							WatermarkPositionDropdown:SetVisibility(Value)
+						end
+						if Value == true and Watermark and Watermark.SetPosition then
+							Watermark:SetPosition((Library.Flags and Library.Flags["WatermarkPosition"]) or "Left")
+						end
 					end,
 				})
 				if Window._BootHideWatermark and Library.SetFlags and Library.SetFlags["Watermark"] then
 					Library.SetFlags["Watermark"](false)
+				end
+				WatermarkPositionDropdown = SettingsSection:Dropdown({
+					Name = "Watermark Position",
+					Flag = "WatermarkPosition",
+					Default = "Left",
+					Items = {"Left", "Center", "Right"},
+					Multi = false,
+					Callback = function(Value)
+						if Watermark and Watermark.SetPosition then
+							Watermark:SetPosition(Value or "Left")
+						end
+					end,
+				})
+				if WatermarkPositionDropdown and WatermarkPositionDropdown.SetVisibility then
+					WatermarkPositionDropdown:SetVisibility((Library.Flags and Library.Flags["Watermark"]) == true)
 				end
 
 				SettingsSection:Toggle({
