@@ -936,6 +936,9 @@ do
 
 		local Success, Result = Library:SafeCall(function()
 			for Index, Value in Library.Flags do
+				if Index == "SilentLoadUI" or Index == "SilentLoadWatermark" then
+					continue
+				end
 				if type(Value) == "table" and Value.Key then
 					Config[Index] = { Key = tostring(Value.Key), Mode = Value.Mode, Toggled = Value.Toggled }
 				elseif type(Value) == "table" and Value.Color then
@@ -954,6 +957,9 @@ do
 
 		local Success, Result = Library:SafeCall(function()
 			for Index, Value in Decoded do
+				if Index == "SilentLoadUI" or Index == "SilentLoadWatermark" then
+					continue
+				end
 				local SetFunction = Library.SetFlags[Index]
 
 				if not SetFunction then
