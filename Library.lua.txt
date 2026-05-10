@@ -4342,8 +4342,10 @@ end
 					if Library.Flags[NewKeybind.Flag] then
 						Library.Flags[NewKeybind.Flag].Toggled = Value
 					end
+					NewKeybind:SetVisibleInList(Value == true)
 				end
 
+				NewKeybind:SetVisibleInList(Toggle.Value == true)
 				return NewKeybind
 			end
 
