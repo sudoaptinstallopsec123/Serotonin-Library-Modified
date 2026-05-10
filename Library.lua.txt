@@ -2346,14 +2346,14 @@ do
 					Update()
 				elseif type(Key) == "table" then
 					local RealKey = Key.Key == "Backspace" and "None" or Key.Key
-					Keybind.Key = tostring(Key.Key)
+					Keybind.Key = tostring(RealKey)
 
 					if Key.Mode then
 						Keybind.Mode = Key.Mode
-						Keybind:SetMode(Key.Mode)
+						Keybind:SetMode(Key.Mode, true)
 					else
 						Keybind.Mode = "Toggle"
-						Keybind:SetMode("Toggle")
+						Keybind:SetMode("Toggle", true)
 					end
 
 					local KeyString = Keys[Keybind.Key] or StringGSub(tostring(RealKey), "Enum.", "") or RealKey
@@ -2366,9 +2366,12 @@ do
 					Keybind.Value = TextToDisplay
 					Items["KeyButton"].Instance.Text = TextToDisplay
 
-					if Key.Toggled then
-						Keybind:Press(Key.Toggled, true)
-					end
+					Keybind.Toggled = (Key.Toggled == true)
+					Library.Flags[Keybind.Flag] = {
+						Mode = Keybind.Mode,
+						Key = Keybind.Key,
+						Toggled = Keybind.Toggled,
+					}
 
 					if Data.Callback then
 						Library:SafeCall(Data.Callback, Keybind.Toggled)
@@ -2418,7 +2421,7 @@ do
 				Update()
 			end
 
-			function Keybind:SetMode(Mode)
+			function Keybind:SetMode(Mode, Silent)
 				for Index, Value in Modes do
 					if Index == Mode then
 						Value[1]:Tween(nil, { BackgroundTransparency = 0 })
@@ -2439,7 +2442,7 @@ do
 					Toggled = Keybind.Toggled,
 				}
 
-				if Data.Callback then
+				if not Silent and Data.Callback then
 					Library:SafeCall(Data.Callback, Keybind.Toggled)
 				end
 
