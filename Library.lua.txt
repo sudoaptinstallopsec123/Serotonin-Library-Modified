@@ -105,6 +105,14 @@ do
 		writefile(path, TableConcat(selected, ","))
 	end
 
+	local function SyncSilentLoadStateFromFlags(path, flags)
+		if not path then
+			return
+		end
+		local f = flags or {}
+		WriteSilentLoadState(path, f["SilentLoadUI"] == true, f["SilentLoadWatermark"] == true)
+	end
+
 	local IsMobile = UserInputService.TouchEnabled or false
 
 	Library = {
@@ -5710,11 +5718,10 @@ end
 					Flag = "SilentLoadUI",
 					Default = SilentState.UI == true,
 					Callback = function(Value)
-						WriteSilentLoadState(
-							SilentLoadPath,
-							Value == true,
-							Library.Flags and Library.Flags["SilentLoadWatermark"] == true
-						)
+						SyncSilentLoadStateFromFlags(SilentLoadPath, {
+							["SilentLoadUI"] = (Value == true),
+							["SilentLoadWatermark"] = Library.Flags and Library.Flags["SilentLoadWatermark"] == true
+						})
 					end
 				})
 
@@ -5723,13 +5730,16 @@ end
 					Flag = "SilentLoadWatermark",
 					Default = SilentState.Watermark == true,
 					Callback = function(Value)
-						WriteSilentLoadState(
-							SilentLoadPath,
-							Library.Flags and Library.Flags["SilentLoadUI"] == true,
-							Value == true
-						)
+						SyncSilentLoadStateFromFlags(SilentLoadPath, {
+							["SilentLoadUI"] = Library.Flags and Library.Flags["SilentLoadUI"] == true,
+							["SilentLoadWatermark"] = (Value == true)
+						})
 					end
 				})
+				-- Ensure txt state is aligned even if defaults/config load order changes.
+				task.defer(function()
+					SyncSilentLoadStateFromFlags(SilentLoadPath, Library.Flags)
+				end)
 				
 				SettingsSection:Toggle({
 					Name = "Mobile Hide/Show Button",
@@ -5905,6 +5915,10 @@ end
 							local Success, Result = Library:LoadConfig(
 								readfile(Library.Folders.Configs .. "/" .. ConfigSelected .. ".json")
 							)
+							SyncSilentLoadStateFromFlags(
+								Library.Folders and Library.Folders.Directory and (Library.Folders.Directory .. "/silentload.txt") or nil,
+								Library.Flags
+							)
 							if Success then
 								Library:Notification("Loaded config " .. ConfigSelected .. ".json", 5)
 							else
@@ -5919,6 +5933,10 @@ end
 					Callback = function()
 						if ConfigSelected ~= nil then
 							writefile(Library.Folders.Configs .. "/" .. ConfigSelected .. ".json", Library:GetConfig())
+							SyncSilentLoadStateFromFlags(
+								Library.Folders and Library.Folders.Directory and (Library.Folders.Directory .. "/silentload.txt") or nil,
+								Library.Flags
+							)
 							Library:Notification("Saved config " .. ConfigSelected .. ".json", 5)
 						end
 					end,
