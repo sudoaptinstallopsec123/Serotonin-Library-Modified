@@ -3514,8 +3514,8 @@ do
 					BorderColor3 = FromRGB(0, 0, 0),
 					Image = string.find(tostring(Window.Logo), "rbxassetid://") and Window.Logo or "rbxassetid://" .. tostring(Window.Logo),
 					BackgroundTransparency = 1,
-					Position = UDim2New(0, 8, 0, 10),
-					Size = UDim2New(0, 18, 0, 18),
+					Position = UDim2New(0, 8, 0, 18),
+					Size = UDim2New(0, 36, 0, 36),
 					BorderSizePixel = 0,
 					BackgroundColor3 = FromRGB(255, 0, 0),
 				})
