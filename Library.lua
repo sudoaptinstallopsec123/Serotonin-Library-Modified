@@ -3510,7 +3510,7 @@ do
 				Items["Logo"] = Instances:Create("ImageLabel", {
 					Parent = Items["Inline"].Instance,
 					Name = "\0",
-					ImageColor3 = FromRGB(255, 0, 0),
+					ImageColor3 = FromRGB(243, 199, 127),
 					BorderColor3 = FromRGB(0, 0, 0),
 					Image = string.find(tostring(Window.Logo), "rbxassetid://") and Window.Logo or "rbxassetid://" .. tostring(Window.Logo),
 					BackgroundTransparency = 1,
