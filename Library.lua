@@ -3517,7 +3517,7 @@ do
 					Position = UDim2New(0, 8, 0, 10),
 					Size = UDim2New(0, 16, 0, 16),
 					BorderSizePixel = 0,
-					BackgroundColor3 = FromRGB(255, 0, 0),
+					BackgroundColor3 = FromRGB(243, 199, 127),
 				})
 
 				Items["Title"] = Instances:Create("TextLabel", {
